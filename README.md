@@ -10,8 +10,9 @@ Auth      | JWT (Bearer Tokens)
 Docs      | Swagger UI                 
 
 ### Bonus
-Email alerts (mocked via Nodemailer)
-Daily fraud scan job (via `node-cron`)
+Soft delete of user and user transactions |
+Email alerts (mocked via Nodemailer) |
+Daily fraud scan job (via `node-cron`) |
 Currency
 
 ## Authentication
