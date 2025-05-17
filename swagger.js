@@ -13,7 +13,7 @@ const options = {
       { name: "Admin", description: "Admin operations and reports" },
       { name: "Wallet", description: "Wallet operations (deposit, withdraw, transfer)" }
     ],
-    omponents: {
+    components: {
       securitySchemes: {
         bearerAuth: {
           type: "http",
