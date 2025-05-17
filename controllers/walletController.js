@@ -1,7 +1,8 @@
 const User = require("../models/User");
 const Transaction = require("../models/Transaction");
-const sendAlert = require("../utils/email"); 
+const sendAlert = require("../utils/email");
 
+// Helper function to check for fraud
 const checkForFraud = async (transaction) => {
   const { type, amount, from, to } = transaction;
 
@@ -14,23 +15,27 @@ const checkForFraud = async (transaction) => {
     const recentTransfers = await Transaction.find({
       from,
       type: "transfer",
-      createdAt: { $gte: new Date(Date.now() - 60000) }, 
+      createdAt: { $gte: new Date(Date.now() - 60 * 1000) }, // past 1 minute
+      deleted: false
     });
+
     if (recentTransfers.length >= 3) {
       transaction.flagged = true;
-      transaction.reason = "Multiple transfers in short time";
+      transaction.reason = "Multiple rapid transfers";
     }
   }
 
   await transaction.save();
 
+  // Fetch user and send fraud alert (use from or to for recipient)
   if (transaction.flagged) {
-    const user = await User.findById(from || to);
+    const userId = from || to;
+    const user = await User.findOne({ _id: userId, deleted: false });
     if (user) {
       await sendAlert(
-        `${user.username}@gmail.com`, 
+        `${user.username}@gmail.com`,
         "Fraud Alert",
-        `A suspicious ${transaction.type} of $${transaction.amount} was flagged. Reason: ${transaction.reason}`
+        `Suspicious ${transaction.type} of $${transaction.amount} flagged. Reason: ${transaction.reason}`
       );
     }
   }
@@ -40,21 +45,25 @@ exports.deposit = async (req, res) => {
   const { amount } = req.body;
   if (amount <= 0) return res.status(400).json({ message: "Invalid amount" });
 
-  const user = await User.findById(req.user.id);
+  const user = await User.findOne({ _id: req.user.id, deleted: false });
+  if (!user) return res.status(404).json({ message: "User not found or deleted" });
+
   user.balance += amount;
   await user.save();
 
   const tx = new Transaction({ type: "deposit", to: user._id, amount });
   await checkForFraud(tx);
 
-  res.json({ message: "Deposit successful" });
+  res.json({ message: "Deposit successful", newBalance: user.balance });
 };
 
 exports.withdraw = async (req, res) => {
   const { amount } = req.body;
   if (amount <= 0) return res.status(400).json({ message: "Invalid amount" });
 
-  const user = await User.findById(req.user.id);
+  const user = await User.findOne({ _id: req.user.id, deleted: false });
+  if (!user) return res.status(404).json({ message: "User not found or deleted" });
+
   if (user.balance < amount) return res.status(400).json({ message: "Insufficient funds" });
 
   user.balance -= amount;
@@ -63,17 +72,17 @@ exports.withdraw = async (req, res) => {
   const tx = new Transaction({ type: "withdraw", from: user._id, amount });
   await checkForFraud(tx);
 
-  res.json({ message: "Withdrawal successful" });
+  res.json({ message: "Withdrawal successful", newBalance: user.balance });
 };
 
 exports.transfer = async (req, res) => {
   const { toUsername, amount } = req.body;
   if (amount <= 0) return res.status(400).json({ message: "Invalid amount" });
 
-  const sender = await User.findById(req.user.id);
-  const recipient = await User.findOne({ username: toUsername });
+  const sender = await User.findOne({ _id: req.user.id, deleted: false });
+  const recipient = await User.findOne({ username: toUsername, deleted: false });
 
-  if (!recipient) return res.status(404).json({ message: "Recipient not found" });
+  if (!sender || !recipient) return res.status(404).json({ message: "Sender or recipient not found or deleted" });
   if (sender.balance < amount) return res.status(400).json({ message: "Insufficient funds" });
 
   sender.balance -= amount;
@@ -90,12 +99,13 @@ exports.transfer = async (req, res) => {
   });
   await checkForFraud(tx);
 
-  res.json({ message: "Transfer successful" });
+  res.json({ message: "Transfer successful", senderBalance: sender.balance });
 };
 
 exports.history = async (req, res) => {
   const txs = await Transaction.find({
     $or: [{ from: req.user.id }, { to: req.user.id }],
+    deleted: false
   }).sort({ createdAt: -1 });
 
   res.json(txs);

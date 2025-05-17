@@ -19,12 +19,21 @@ exports.topUsers = async (req, res) => {
 exports.softDeleteUser = async (req, res) => {
   const { username } = req.params;
   const user = await User.findOne({ username });
-
   if (!user) return res.status(404).json({ message: "User not found" });
 
   user.deleted = true;
   await user.save();
-
-  res.json({ message: `User ${username} soft-deleted` });
+  res.json({ message: `User '${username}' soft-deleted` });
 };
+
+exports.softDeleteTransaction = async (req, res) => {
+  const { id } = req.params;
+  const tx = await Transaction.findById(id);
+  if (!tx) return res.status(404).json({ message: "Transaction not found" });
+
+  tx.deleted = true;
+  await tx.save();
+  res.json({ message: `Transaction '${id}' soft-deleted` });
+};
+
 

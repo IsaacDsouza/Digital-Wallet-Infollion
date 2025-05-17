@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const auth = require("../middlewares/auth");
-const { flaggedTransactions, totalBalances, topUsers } = require("../controllers/adminController");
+const { flaggedTransactions, totalBalances, topUsers, softDeleteUser, softDeleteTransaction } = require("../controllers/adminController");
 
 /**
  * @swagger
@@ -44,6 +44,45 @@ router.get("/total-balances", auth, totalBalances);
  *         description: Top user list
  */
 router.get("/top-users", auth, topUsers);
+
+
+/**
+ * @swagger
+ * /api/admin/user/{username}:
+ *   delete:
+ *     summary: Soft delete a user account
+ *     tags: [Admin]
+ *     parameters:
+ *       - name: username
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User soft-deleted
+ */
+
+router.delete("/user/:username", auth, softDeleteUser);
+
+/**
+ * @swagger
+ * /api/admin/transaction/{id}:
+ *   delete:
+ *     summary: Soft delete a transaction
+ *     tags: [Admin]
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Transaction soft-deleted
+ */
+router.delete("/transaction/:id", auth, softDeleteTransaction);
+
 
 
 module.exports = router;
