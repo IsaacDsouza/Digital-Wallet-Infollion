@@ -7,9 +7,16 @@ exports.flaggedTransactions = async (req, res) => {
 };
 
 exports.totalBalances = async (req, res) => {
-  const users = await User.find();
-  const total = users.reduce((sum, user) => sum + user.balance, 0);
-  res.json({ total });
+  const users = await User.find({ deleted: false });
+  const totals = {};
+
+  users.forEach((user) => {
+  for (const [currency, amount] of user.balances.entries()) {
+    totals[currency] = (totals[currency] || 0) + amount;
+  }
+});
+
+res.json({ totals });
 };
 
 exports.topUsers = async (req, res) => {

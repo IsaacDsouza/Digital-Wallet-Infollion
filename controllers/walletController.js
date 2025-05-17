@@ -2,11 +2,10 @@ const User = require("../models/User");
 const Transaction = require("../models/Transaction");
 const sendAlert = require("../utils/email");
 
-// Helper function to check for fraud
 const checkForFraud = async (transaction) => {
-  const { type, amount, from, to } = transaction;
+  const { type, amount, from, to, currency } = transaction;
 
-  if (type === "withdraw" && amount > 1000) {
+  if (type === "withdraw" && currency === "USD" && amount > 1000) {
     transaction.flagged = true;
     transaction.reason = "Large withdrawal";
   }
@@ -15,8 +14,9 @@ const checkForFraud = async (transaction) => {
     const recentTransfers = await Transaction.find({
       from,
       type: "transfer",
-      createdAt: { $gte: new Date(Date.now() - 60 * 1000) }, // past 1 minute
-      deleted: false
+      currency,
+      createdAt: { $gte: new Date(Date.now() - 60 * 1000) },
+      deleted: false,
     });
 
     if (recentTransfers.length >= 3) {
@@ -27,7 +27,6 @@ const checkForFraud = async (transaction) => {
 
   await transaction.save();
 
-  // Fetch user and send fraud alert (use from or to for recipient)
   if (transaction.flagged) {
     const userId = from || to;
     const user = await User.findOne({ _id: userId, deleted: false });
@@ -35,58 +34,72 @@ const checkForFraud = async (transaction) => {
       await sendAlert(
         `${user.username}@gmail.com`,
         "Fraud Alert",
-        `Suspicious ${transaction.type} of $${transaction.amount} flagged. Reason: ${transaction.reason}`
+        `Suspicious ${transaction.type} of $${transaction.amount} ${currency} was flagged.\nReason: ${transaction.reason}`
       );
     }
   }
 };
 
 exports.deposit = async (req, res) => {
-  const { amount } = req.body;
-  if (amount <= 0) return res.status(400).json({ message: "Invalid amount" });
+  const { amount, currency } = req.body;
+
+  if (!amount || amount <= 0) return res.status(400).json({ message: "Invalid amount" });
+  if (!currency) return res.status(400).json({ message: "Currency is required" });
 
   const user = await User.findOne({ _id: req.user.id, deleted: false });
   if (!user) return res.status(404).json({ message: "User not found or deleted" });
 
-  user.balance += amount;
+  const current = user.balances.get(currency) || 0;
+  user.balances.set(currency, current + amount);
   await user.save();
 
-  const tx = new Transaction({ type: "deposit", to: user._id, amount });
+  const tx = new Transaction({ type: "deposit", to: user._id, amount, currency });
   await checkForFraud(tx);
 
-  res.json({ message: "Deposit successful", newBalance: user.balance });
+  res.json({
+    message: `Deposit successful`,
+    currency,
+    newBalance: user.balances.get(currency)
+  });
 };
 
 exports.withdraw = async (req, res) => {
-  const { amount } = req.body;
-  if (amount <= 0) return res.status(400).json({ message: "Invalid amount" });
+  const { amount, currency } = req.body;
+
+  if (!amount || amount <= 0) return res.status(400).json({ message: "Invalid amount" });
+  if (!currency) return res.status(400).json({ message: "Currency is required" });
 
   const user = await User.findOne({ _id: req.user.id, deleted: false });
   if (!user) return res.status(404).json({ message: "User not found or deleted" });
 
-  if (user.balance < amount) return res.status(400).json({ message: "Insufficient funds" });
+  const currentBalance = user.balances.get(currency) || 0;
+  if (currentBalance < amount) return res.status(400).json({ message: "Insufficient funds" });
 
-  user.balance -= amount;
+  user.balances.set(currency, currentBalance - amount);
   await user.save();
 
-  const tx = new Transaction({ type: "withdraw", from: user._id, amount });
+  const tx = new Transaction({ type: "withdraw", from: user._id, amount, currency });
   await checkForFraud(tx);
 
-  res.json({ message: "Withdrawal successful", newBalance: user.balance });
+  res.json({ message: "Withdrawal successful", currency, newBalance: user.balances.get(currency) });
 };
 
 exports.transfer = async (req, res) => {
-  const { toUsername, amount } = req.body;
-  if (amount <= 0) return res.status(400).json({ message: "Invalid amount" });
+  const { toUsername, amount, currency } = req.body;
+
+  if (!amount || amount <= 0) return res.status(400).json({ message: "Invalid amount" });
+  if (!currency) return res.status(400).json({ message: "Currency is required" });
 
   const sender = await User.findOne({ _id: req.user.id, deleted: false });
   const recipient = await User.findOne({ username: toUsername, deleted: false });
 
   if (!sender || !recipient) return res.status(404).json({ message: "Sender or recipient not found or deleted" });
-  if (sender.balance < amount) return res.status(400).json({ message: "Insufficient funds" });
 
-  sender.balance -= amount;
-  recipient.balance += amount;
+  const senderBalance = sender.balances.get(currency) || 0;
+  if (senderBalance < amount) return res.status(400).json({ message: "Insufficient funds" });
+
+  sender.balances.set(currency, senderBalance - amount);
+  recipient.balances.set(currency, (recipient.balances.get(currency) || 0) + amount);
 
   await sender.save();
   await recipient.save();
@@ -96,10 +109,12 @@ exports.transfer = async (req, res) => {
     from: sender._id,
     to: recipient._id,
     amount,
+    currency
   });
+
   await checkForFraud(tx);
 
-  res.json({ message: "Transfer successful", senderBalance: sender.balance });
+  res.json({ message: "Transfer successful", currency, senderBalance: sender.balances.get(currency) });
 };
 
 exports.history = async (req, res) => {

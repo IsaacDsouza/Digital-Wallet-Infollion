@@ -1,7 +1,7 @@
 const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
-  jsonTransport: true, // Use JSON instead of sending email (mock)
+  jsonTransport: true, //for mock mail I'm using json
 });
 
 const sendAlert = async (userEmail, subject, message) => {
