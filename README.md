@@ -2,6 +2,7 @@
 # Digital Wallet System
 
 A backend wallet system for virtual cash management with JWT-based authentication, fraud detection, soft deletion, email alerts, and Swagger documentation.
+All APIs are documented via Swagger hosted : https://digital-wallet-infollion.onrender.com/api-docs/
 
 ## Tech Stack
 
@@ -9,7 +10,7 @@ Backend   | Node.js, Express, MongoDB
 Auth      | JWT (Bearer Tokens)        
 Docs      | Swagger UI 
 
-### 1️⃣ Backend Setup
+### 1️Backend Setup
 
 ```bash
 cd wallet-system
@@ -30,7 +31,7 @@ npm start
 ```
 
 Access Swagger:  
-http://localhost:5000/api-docs
+https://digital-wallet-infollion.onrender.com/api-docs/
 
 ### Bonus
 Soft delete of user and user transactions |
@@ -114,7 +115,10 @@ Runs daily at 2:00 AM using `node-cron`. Flags:
 
 ## Swagger Documentation
 
-All APIs are documented via Swagger: http://localhost:5000/api-docs
+All APIs are documented via Swagger hosted : https://digital-wallet-infollion.onrender.com/api-docs/
+
+
+(All APIs are documented via Swagger locally : http://localhost:5000/api-docs)
 
 
 ## Author
