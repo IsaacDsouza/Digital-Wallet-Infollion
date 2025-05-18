@@ -4,13 +4,16 @@
 A backend wallet system for virtual cash management with JWT-based authentication, fraud detection, soft deletion, email alerts, and Swagger documentation.
 All APIs are documented via Swagger hosted : https://digital-wallet-infollion-production.up.railway.app/api-docs/
 
+
+![Postman](./assets/demo.gif)
+
 ## Tech Stack
 
 Backend   | Node.js, Express, MongoDB  
 Auth      | JWT (Bearer Tokens)        
 Docs      | Swagger UI 
 
-### 1️Backend Setup
+### Backend Setup
 
 ```bash
 cd wallet-system
