@@ -5,7 +5,7 @@ A backend wallet system for virtual cash management with JWT-based authenticatio
 All APIs are documented via Swagger hosted : https://digital-wallet-infollion-production.up.railway.app/api-docs/
 
 
-![Postman](./assets/demo.gif)
+![Postman](./assets/wallet-swagger-demo.gif)
 
 ## Tech Stack
 
