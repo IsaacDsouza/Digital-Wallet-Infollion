@@ -18,6 +18,10 @@ exports.login = async (req, res) => {
   if (!user || !(await user.comparePassword(password))) {
     return res.status(400).json({ message: "Invalid credentials" });
   }
-  const token = jwt.sign({ user: { id: user._id } }, process.env.JWT_SECRET, {expiresIn: "6h"});
-  res.json({ token });
+  const expiresInSeconds = 6 * 60 * 60; // 6 hours
+  const expiresAt = new Date(Date.now() + expiresInSeconds * 1000).toISOString(); // UTC ISO format
+  const token = jwt.sign({ user: { id: user._id } }, process.env.JWT_SECRET, {expiresIn: expiresInSeconds});
+  res.json({ message: "Login successful",
+    token,
+    expiresAt, });
 };

@@ -49,6 +49,23 @@ router.post("/register", register);
  *     responses:
  *       200:
  *         description: JWT token returned
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Login successful
+ *                 token:
+ *                   type: string
+ *                   description: JWT access token
+ *                 expiresAt:
+ *                   type: string
+ *                   format: date-time
+ *                   example: "2025-05-19T12:34:56.789Z"
+ *       400:
+ *         description: Invalid credentials
  */
 router.post("/login", login);
 

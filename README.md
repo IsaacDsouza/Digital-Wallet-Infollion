@@ -93,7 +93,7 @@ POST /api/wallet/transfer
 Authorization: Bearer <token>
 
 {
-  "toUsername": "alice",
+  "toUsername": "User1",
   "amount": 75,
   "currency": "USD"
 }

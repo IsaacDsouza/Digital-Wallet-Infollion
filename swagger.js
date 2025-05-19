@@ -15,10 +15,11 @@ const options = {
     ],
     components: {
       securitySchemes: {
-        bearerAuth: {
+        AuthBearertoken: {
           type: "http",
           scheme: "bearer",
           bearerFormat: "JWT",
+          description: "Bearer token for authentication (paste from login response)",
         },
       },
       schemas: {
@@ -51,7 +52,7 @@ const options = {
         }
       }
     },
-    security: [{ bearerAuth: [] }],
+    security: [{ AuthBearertoken: [] }],
   },
   apis: ["./routes/*.js"], 
 };
